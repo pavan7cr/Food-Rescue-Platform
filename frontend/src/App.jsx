@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://food-rescue-platform-backend.onrender.com";
 
 export default function App() {
   const [donations, setDonations] = useState([]);
@@ -10,22 +10,19 @@ export default function App() {
   const [location, setLocation] = useState("");
   const [message, setMessage] = useState("");
 
-  const loadDonations = async () => {
-    try {
-      const res = await fetch(`${API_URL}/donations`);
-      const data = await res.json();
-      setDonations(data);
-    } catch (err) {
-      setMessage("Could not load donations. Is the backend running on port 8000?");
-    }
-  };
+  async function loadDonations() {
+    const res = await fetch(`${API_URL}/donations`);
+    const data = await res.json();
+    setDonations(data);
+  }
 
   useEffect(() => {
     loadDonations();
   }, []);
 
-  const handleCreate = async (e) => {
+  async function handleCreate(e) {
     e.preventDefault();
+    setMessage("");
     const res = await fetch(`${API_URL}/donations`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -41,50 +38,50 @@ export default function App() {
       setDescription("");
       setQuantity("");
       setLocation("");
-      setMessage("Donation posted!");
+      setMessage("Donation posted.");
       loadDonations();
     } else {
-      setMessage("Failed to post. Check title, quantity, and location.");
+      setMessage("Could not post donation. Please try again.");
     }
-  };
+  }
 
-  const handleClaim = async (id) => {
+  async function handleClaim(id) {
     const res = await fetch(`${API_URL}/donations/${id}/claim`, {
       method: "POST",
     });
     if (res.ok) {
-      setMessage("Donation claimed!");
+      setMessage("Donation claimed.");
       loadDonations();
     } else {
-      setMessage("Could not claim. It may already be claimed.");
+      setMessage("This donation was already claimed.");
+      loadDonations();
     }
-  };
+  }
 
   return (
-    <div style={{ maxWidth: "700px", margin: "0 auto", padding: "20px", fontFamily: "sans-serif" }}>
+    <div style={{ maxWidth: "700px", margin: "40px auto", padding: "20px", fontFamily: "sans-serif" }}>
       <h1>Food Rescue Platform</h1>
-      <p>Donors post surplus food. Nonprofits claim it.</p>
-      {message && <p>{message}</p>}
+      <p>Surplus food from donors, claimed by nonprofits.</p>
 
-      <form onSubmit={handleCreate} style={{ border: "1px solid #ccc", padding: "16px", borderRadius: "8px", marginBottom: "20px" }}>
-        <h2>Post a donation</h2>
-        <input placeholder="Title, e.g. Fresh sandwiches" value={title} onChange={(e) => setTitle(e.target.value)} required style={{ display: "block", width: "100%", marginBottom: "10px", padding: "8px" }} />
-        <input placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} style={{ display: "block", width: "100%", marginBottom: "10px", padding: "8px" }} />
-        <input placeholder="Quantity" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} required style={{ display: "block", width: "100%", marginBottom: "10px", padding: "8px" }} />
-        <input placeholder="Location, e.g. Wichita, KS" value={location} onChange={(e) => setLocation(e.target.value)} required style={{ display: "block", width: "100%", marginBottom: "10px", padding: "8px" }} />
+      <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title, for example Fresh sandwiches" required />
+        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+        <input value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Quantity" type="number" required />
+        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location, for example Wichita, KS" required />
         <button type="submit">Post Donation</button>
       </form>
 
-      <h2>Donations</h2>
-      {donations.length === 0 && <p>No donations yet.</p>}
+      {message && <p>{message}</p>}
+
+      <h2>Available Donations</h2>
+      {donations.length === 0 && <p>No donations yet. Post the first one above.</p>}
       {donations.map((d) => (
-        <div key={d.id} style={{ border: "1px solid #ddd", padding: "12px", borderRadius: "8px", marginBottom: "12px" }}>
+        <div key={d.id} style={{ border: "1px solid #ddd", padding: "15px", marginBottom: "10px", borderRadius: "8px" }}>
           <h3>{d.title}</h3>
           <p>{d.description}</p>
-          <p>Quantity: {d.quantity} | Location: {d.location}</p>
-          <p>Status: <strong>{d.status}</strong></p>
+          <p>Quantity: {d.quantity} | Location: {d.location} | Status: {d.status}</p>
           {d.status === "available" ? (
-            <button onClick={() => handleClaim(d.id)}>Claim this donation</button>
+            <button onClick={() => handleClaim(d.id)}>Claim</button>
           ) : (
             <span>Claimed</span>
           )}
